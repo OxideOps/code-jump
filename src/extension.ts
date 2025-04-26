@@ -74,8 +74,14 @@ export function activate(context: vscode.ExtensionContext): void {
             for (const key of labelPositionMap.keys()) {
                 if (key.startsWith(searchString)) {
                     labelMatchString = searchString;
-                    if (labelMatchString.length === value.length) {
-                        // Jump
+                    if (searchString.length === key.length) {
+                        // Jump to the matched position
+                        const position = labelPositionMap.get(labelMatchString);
+                        if (position) {
+                            editor.selection = new vscode.Selection(position, position);
+                            editor.revealRange(new vscode.Range(position, position));
+                            exitJumpMode(editor);
+                        }
                     }
                     break;
                 }
@@ -246,6 +252,7 @@ function exitJumpMode(editor: vscode.TextEditor): void {
     inJumpMode = false;
     clearDecorations(editor);
     labelPositionMap.clear();
+    labelMatchString = '';
 
     // Dispose quickpick if exists
     if (quickPick) {
