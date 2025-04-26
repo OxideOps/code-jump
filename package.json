@@ -1,0 +1,57 @@
+{
+    "name": "ace-jump",
+    "displayName": "Ace Jump",
+    "description": "A simple implementation of acejump for VS Code",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.60.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "ace-jump.startJump",
+                "title": "Ace Jump: Start Jump"
+            },
+            {
+                "command": "extension.escapeJumpMode",
+                "title": "Ace Jump: Exit Jump Mode"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "ace-jump.startJump",
+                "key": "ctrl+;",
+                "mac": "cmd+;",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "extension.escapeJumpMode",
+                "key": "escape",
+                "when": "editorTextFocus"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "webpack",
+        "watch": "webpack --watch",
+        "package": "webpack --mode production --devtool hidden-source-map",
+        "lint": "eslint src --ext ts"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.60.0",
+        "@types/node": "^16.11.7",
+        "@typescript-eslint/eslint-plugin": "^5.30.0",
+        "@typescript-eslint/parser": "^5.30.0",
+        "eslint": "^8.18.0",
+        "typescript": "^4.7.4",
+        "ts-loader": "^9.3.1",
+        "webpack": "^5.76.0",
+        "webpack-cli": "^4.10.0"
+    }
+}
