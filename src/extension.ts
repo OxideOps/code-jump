@@ -1,5 +1,19 @@
 import * as vscode from 'vscode';
 
+// Interface for storing label position
+interface Match {
+    label: string;
+    info: MatchInfo;
+}
+
+// Interface for storing match information
+interface MatchInfo {
+    start: vscode.Position;
+    range: vscode.Range;
+    nextChar: string;
+    nextNextChar: string;
+}
+
 // Decoration type for matched characters
 let matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     border: '2px solid #569cd6',
@@ -27,25 +41,11 @@ let matchingLabels: boolean = false;
 
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
-// Interface for storing label position
-interface Match {
-    label: string;
-    info: MatchInfo;
-}
-
 // Array to track label positions
 let matches: Match[] = [];
 
 // Characters used for labels - chosen for clarity and ease of reach on keyboard
 const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
-
-// Interface for storing match information
-interface MatchInfo {
-    start: vscode.Position;
-    range: vscode.Range;
-    nextChar: string;
-    nextNextChar: string;
-}
 
 export function activate(context: vscode.ExtensionContext): void {
     // Register the main ace jump command
@@ -156,11 +156,10 @@ function generateLabels(matchInfos: MatchInfo[]): string[] {
 }
 
 function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string): void {
-    // Clear previous decorations
-    editor.setDecorations(matchDecorationType, []);
-    editor.setDecorations(labelDecorationType, []);
-
     if (!searchString) {
+        // Clear previous decorations
+        editor.setDecorations(matchDecorationType, []);
+        editor.setDecorations(labelDecorationType, []);
         return;
     }
 
