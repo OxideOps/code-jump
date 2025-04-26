@@ -23,18 +23,24 @@ let labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createT
 
 // Track if we're in jump mode
 let inJumpMode: boolean = false;
-let labelMatchString: string = '';
-let labelDecorations: vscode.DecorationOptions[] = [];
+let matchingLabels: boolean = false;
+
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
-// Map to track label positions - key is the label, value is the Position to jump to
-let labelPositionMap: Map<string, vscode.Position> = new Map();
+// Interface for storing label position
+interface Match {
+    label: string;
+    info: MatchInfo;
+}
+
+// Array to track label positions
+let matches: Match[] = [];
 
 // Characters used for labels - chosen for clarity and ease of reach on keyboard
 const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
 
 // Interface for storing match information
-interface MatchPosition {
+interface MatchInfo {
     start: vscode.Position;
     range: vscode.Range;
     nextChar: string;
@@ -70,24 +76,22 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Listen to value changes to update highlights in real-time
         quickPick.onDidChangeValue(value => {
-            const searchString = labelMatchString + value[value.length - 1].toUpperCase();
-            for (const key of labelPositionMap.keys()) {
-                if (key.startsWith(searchString)) {
-                    labelMatchString = searchString;
-                    if (searchString.length === key.length) {
-                        // Jump to the matched position
-                        const position = labelPositionMap.get(labelMatchString);
-                        if (position) {
-                            editor.selection = new vscode.Selection(position, position);
-                            editor.revealRange(new vscode.Range(position, position));
-                            exitJumpMode(editor);
-                        }
-                    }
-                    break;
-                }
-            }
+            const searchChar = value[value.length - 1].toUpperCase();
+            const match = matches.find(lp => lp.label === searchChar);
 
-            if (!labelMatchString) {
+            if (match) {
+                const position = match.info.start;
+                editor.selection = new vscode.Selection(position, position);
+                editor.revealRange(new vscode.Range(position, position));
+                exitJumpMode(editor);
+            } else if (matches.some(lp => lp.label.startsWith(searchChar))) {
+                matchingLabels = true;
+                matches = matches.filter(lp => lp.label.startsWith(searchChar));
+                matches.forEach(match => {
+                    match.label = match.label.substring(searchChar.length);
+                });
+                updateDecorations(editor);
+            } else if (!matchingLabels) {
                 findAndHighlightMatches(editor, value);
             }
         });
@@ -116,11 +120,11 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 // Generate unique labels efficiently
-function generateLabels(matchPositions: MatchPosition[]): string[] {
-    const nextChars = new Set(matchPositions.map(match => match.nextChar));
-    const count = matchPositions.length;
-    const labelCharsSet = new Set(labelChars.split(''));
-    const firstChars = Array.from(labelCharsSet).filter(char => !nextChars.has(char));
+function generateLabels(matchInfos: MatchInfo[]): string[] {
+    const nextChars = new Set(matchInfos.map(match => match.nextChar.toUpperCase()));
+    const count = matchInfos.length;
+    const labelCharsArray = labelChars.split('');
+    const firstChars = labelCharsArray.filter(char => !nextChars.has(char));
     const labels = Array.from({ length: count }, (_, i) => firstChars[i % firstChars.length]);
 
     if (count <= firstChars.length) {
@@ -131,10 +135,10 @@ function generateLabels(matchPositions: MatchPosition[]): string[] {
     const secondCharMap = new Map<string, Set<string>>();
 
     // Group matches by their first label character
-    matchPositions.forEach((match, i) => {
+    matchInfos.forEach((match, i) => {
         const firstChar = labels[i];
         if (!secondCharMap.has(firstChar)) {
-            secondCharMap.set(firstChar, new Set(labelCharsSet));
+            secondCharMap.set(firstChar, new Set(labelCharsArray));
         }
         secondCharMap.get(firstChar)!.delete(match.nextNextChar.toUpperCase());
     });
@@ -162,12 +166,11 @@ function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string
 
     const text = editor.document.getText();
     const searchRegex = new RegExp(escapeRegExp(searchString), 'gi');
-    const matchRanges: vscode.DecorationOptions[] = [];
     const visibleRanges = editor.visibleRanges;
 
     // Find all matches
     let match: RegExpExecArray | null;
-    let matchPositions: MatchPosition[] = [];
+    let matchInfos: MatchInfo[] = [];
 
     while ((match = searchRegex.exec(text)) !== null) {
         const startPos = editor.document.positionAt(match.index);
@@ -179,7 +182,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string
                 const nextChar = getNextCharacter(editor, endPos);
                 const nextNextChar = getNextCharacter(editor, endPos.translate(0, 1));
                 // Store match information with position
-                matchPositions.push({
+                matchInfos.push({
                     start: startPos,
                     range: new vscode.Range(startPos, endPos),
                     nextChar,
@@ -191,34 +194,35 @@ function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string
     }
 
     // Generate a unique label for each match, avoiding next character conflicts
-    const labels = generateLabels(matchPositions);
+    const labels = generateLabels(matchInfos);
 
-    // Create highlight decorations and label decorations
-    matchRanges.length = 0;
-    labelDecorations.length = 0;
+    matches = matchInfos.map((match, index) => ({
+        label: labels[index],
+        info: match
+    }));
 
-    // Clear map
-    labelPositionMap.clear();
+    updateDecorations(editor);
+}
 
-    matchPositions.forEach((match, index) => {
+function updateDecorations(editor: vscode.TextEditor): void {
+    const matchRanges: vscode.DecorationOptions[] = [];
+    const labelDecorations: vscode.DecorationOptions[] = [];
+
+    matches.forEach(match => {
         // Add match highlighting
         matchRanges.push({
-            range: match.range
+            range: match.info.range
         });
 
         // Add label decoration
-        const label = labels[index];
         labelDecorations.push({
-            range: new vscode.Range(match.start, match.start),
+            range: new vscode.Range(match.info.start, match.info.start),
             renderOptions: {
                 before: {
-                    contentText: label
+                    contentText: match.label
                 }
             }
         });
-
-        // Store the label and its position for future jumping
-        labelPositionMap.set(label, match.start);
     });
 
     // Apply decorations
@@ -227,7 +231,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string
 
     // Update the QuickPick title with match count
     if (quickPick) {
-        quickPick.title = `${matchPositions.length} matches`;
+        quickPick.title = `${matches.length} matches`;
     }
 }
 
@@ -251,8 +255,8 @@ function clearDecorations(editor: vscode.TextEditor): void {
 function exitJumpMode(editor: vscode.TextEditor): void {
     inJumpMode = false;
     clearDecorations(editor);
-    labelPositionMap.clear();
-    labelMatchString = '';
+    matches = [];
+    matchingLabels = false;
 
     // Dispose quickpick if exists
     if (quickPick) {
