@@ -23,6 +23,7 @@ let labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createT
 
 // Track if we're in jump mode
 let inJumpMode: boolean = false;
+let labelMatchString: string = '';
 let labelDecorations: vscode.DecorationOptions[] = [];
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
@@ -69,7 +70,20 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Listen to value changes to update highlights in real-time
         quickPick.onDidChangeValue(value => {
-            findAndHighlightMatches(editor, value);
+            const searchString = labelMatchString + value[value.length - 1].toUpperCase();
+            for (const key of labelPositionMap.keys()) {
+                if (key.startsWith(searchString)) {
+                    labelMatchString = searchString;
+                    if (labelMatchString.length === value.length) {
+                        // Jump
+                    }
+                    break;
+                }
+            }
+
+            if (!labelMatchString) {
+                findAndHighlightMatches(editor, value);
+            }
         });
 
         // Exit when quickpick is hidden
