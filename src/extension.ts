@@ -38,6 +38,7 @@ let labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createT
 // Track if we're in jump mode
 let inJumpMode: boolean = false;
 let matchingLabels: boolean = false;
+let inputBufferLength: number = 0;
 
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
@@ -78,8 +79,13 @@ export function activate(context: vscode.ExtensionContext): void {
         quickPick.onDidChangeValue(value => {
             const searchChar = value[value.length - 1].toUpperCase();
             const match = matches.find(lp => lp.label === searchChar);
+            const backspaced = value.length < inputBufferLength;
 
-            if (match) {
+            inputBufferLength = value.length;
+
+            if (backspaced && !matchingLabels) {
+                findAndHighlightMatches(editor, value);
+            } else if (match) {
                 const position = match.info.start;
                 editor.selection = new vscode.Selection(position, position);
                 editor.revealRange(new vscode.Range(position, position));
