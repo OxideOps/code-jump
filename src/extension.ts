@@ -40,7 +40,7 @@ let inJumpMode: boolean = false;
 let matchingLabels: boolean = false;
 let inputBufferLength: number = 0;
 let searchString: string = '';
-let lastQuickPickValue: string = '';
+let editedQuickPick: boolean = false;
 
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
@@ -66,7 +66,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Enter jump mode
         inJumpMode = true;
-        lastQuickPickValue = '';
 
         // Create QuickPick input that minimizes UI
         quickPick = vscode.window.createQuickPick();
@@ -80,11 +79,28 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Listen to value changes to update highlights in real-time
         quickPick.onDidChangeValue(value => {
+            const backspaced = value.length < inputBufferLength;
+            inputBufferLength = value.length;
+
+            if (editedQuickPick) {
+                editedQuickPick = false;
+                return;
+            }
+
+            if (value.length === 0) {
+                if (matchingLabels) {
+                    matchingLabels = false;
+                    editQuickPick(searchString);
+                    findAndHighlightMatches(editor);
+                } else {
+                    exitJumpMode(editor);
+                }
+                return;
+            }
+
             const searchChar = value[value.length - 1].toUpperCase();
             const matchedLabel = matches.find(lp => lp.label === searchChar);
-            const backspaced = value.length < inputBufferLength;
 
-            inputBufferLength = value.length;
 
             if (!backspaced && matchedLabel) {
                 const position = matchedLabel.info.start;
@@ -97,7 +113,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 matches.forEach(match => {
                     match.label = match.label.substring(searchChar.length);
                 });
-                quickPick!.value = searchChar.toLowerCase();
+                editQuickPick(searchChar.toLowerCase());
                 updateDecorations(editor);
             } else if (!matchingLabels) {
                 searchString = value;
@@ -126,6 +142,13 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(startJumpDisposable);
     context.subscriptions.push(escJumpDisposable);
+}
+
+function editQuickPick(value: string): void {
+    if (quickPick) {
+        quickPick.value = value;
+        editedQuickPick = true;
+    }
 }
 
 // Generate unique labels efficiently
