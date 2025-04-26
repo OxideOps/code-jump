@@ -31,7 +31,7 @@ let searchBuffer: string = '';
 let labelPositionMap: Map<string, vscode.Position> = new Map();
 
 // Characters used for labels - chosen for clarity and ease of reach on keyboard
-const labelChars: string = 'abcdefghijklmnopqrstuvwxyz';
+const labelChars: string = 'jfkdlshgaytnburmviecoxwpzq';
 
 // Interface for storing match information
 interface MatchPosition {
@@ -98,32 +98,39 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 // Generate unique labels efficiently
-function generateLabels(count: number): string[] {
+function generateLabels(count: number, charsToAvoid: Set<string> = new Set()): string[] {
     const labels: string[] = [];
+    // Filter out characters to avoid
+    const filteredLabelChars = labelChars.split('')
+        .filter(char => !charsToAvoid.has(char.toUpperCase()))
+        .join('');
+
+    // If we have no usable chars, fallback to original set
+    const usableChars = filteredLabelChars.length > 0 ? filteredLabelChars : labelChars;
 
     // First, use single characters if there are few enough matches
-    if (count <= labelChars.length) {
+    if (count <= usableChars.length) {
         for (let i = 0; i < count; i++) {
-            labels.push(labelChars[i].toUpperCase());
+            labels.push(usableChars[i].toUpperCase());
         }
         return labels;
     }
 
     // Otherwise use combinations of characters
-    if (count <= labelChars.length * labelChars.length) {
-        for (let i = 0; i < labelChars.length; i++) {
+    if (count <= usableChars.length * labelChars.length) {
+        for (let i = 0; i < usableChars.length; i++) {
             for (let j = 0; j < labelChars.length && labels.length < count; j++) {
-                labels.push((labelChars[i] + labelChars[j]).toUpperCase());
+                labels.push((usableChars[i] + labelChars[j]).toUpperCase());
             }
         }
         return labels;
     }
 
     // If we need more labels (rare), generate three-character labels
-    for (let i = 0; i < labelChars.length && labels.length < count; i++) {
+    for (let i = 0; i < usableChars.length && labels.length < count; i++) {
         for (let j = 0; j < labelChars.length && labels.length < count; j++) {
             for (let k = 0; k < labelChars.length && labels.length < count; k++) {
-                labels.push((labelChars[i] + labelChars[j] + labelChars[k]).toUpperCase());
+                labels.push((usableChars[i] + labelChars[j] + labelChars[k]).toUpperCase());
             }
         }
     }
@@ -147,6 +154,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string
     // Find all matches
     let match: RegExpExecArray | null;
     let matchPositions: MatchPosition[] = [];
+    const nextChars = new Set<string>();
 
     while ((match = searchRegex.exec(text)) !== null) {
         const startPos = editor.document.positionAt(match.index);
@@ -155,19 +163,24 @@ function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string
         // Only include matches in the visible ranges
         for (const visibleRange of visibleRanges) {
             if (startPos.line >= visibleRange.start.line && endPos.line <= visibleRange.end.line) {
+                const nextChar = getNextCharacter(editor, endPos);
                 // Store match information with position
                 matchPositions.push({
                     start: startPos,
                     range: new vscode.Range(startPos, endPos),
-                    nextChar: getNextCharacter(editor, endPos)
+                    nextChar
                 });
+                // Add to set of chars to avoid if it's a letter
+                if (nextChar.match(/[a-zA-Z]/)) {
+                    nextChars.add(nextChar.toUpperCase());
+                }
                 break;
             }
         }
     }
 
-    // Generate a unique label for each match
-    const labels = generateLabels(matchPositions.length);
+    // Generate a unique label for each match, avoiding next character conflicts
+    const labels = generateLabels(matchPositions.length, nextChars);
 
     // Create highlight decorations and label decorations
     matchRanges.length = 0;

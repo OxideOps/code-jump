@@ -3,6 +3,10 @@
     "displayName": "Ace Jump",
     "description": "A simple implementation of acejump for VS Code",
     "version": "0.0.1",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/OxideOps/ace-jump.git"
+    },
     "engines": {
         "vscode": "^1.60.0"
     },
