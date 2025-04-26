@@ -14,6 +14,9 @@ interface MatchInfo {
     nextNextChar: string;
 }
 
+// Configuration options
+const MAX_MATCHES = 300;
+
 // Decoration type for matched characters
 let matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     border: '2px solid #569cd6',
@@ -142,6 +145,10 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(startJumpDisposable);
     context.subscriptions.push(escJumpDisposable);
+
+    // Add decorations to subscription for proper cleanup
+    context.subscriptions.push(matchDecorationType);
+    context.subscriptions.push(labelDecorationType);
 }
 
 function editQuickPick(value: string): void {
@@ -200,8 +207,10 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
     // Find all matches
     let match: RegExpExecArray | null;
     let matchInfos: MatchInfo[] = [];
+    let matchCount = 0;
 
-    while ((match = searchRegex.exec(text)) !== null) {
+    // Limit to MAX_MATCHES to prevent performance issues
+    while ((match = searchRegex.exec(text)) !== null && matchCount < MAX_MATCHES) {
         const startPos = editor.document.positionAt(match.index);
         const endPos = editor.document.positionAt(match.index + searchString.length);
 
@@ -217,6 +226,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
                     nextChar,
                     nextNextChar
                 });
+                matchCount++;
                 break;
             }
         }
@@ -260,7 +270,9 @@ function updateDecorations(editor: vscode.TextEditor): void {
 
     // Update the QuickPick title with match count
     if (quickPick) {
-        quickPick.title = `${matches.length} matches`;
+        quickPick.title = matches.length >= MAX_MATCHES ?
+            `${matches.length}+ matches (limited)` :
+            `${matches.length} matches`;
     }
 }
 
@@ -287,6 +299,7 @@ function exitJumpMode(editor: vscode.TextEditor): void {
     matches = [];
     matchingLabels = false;
     searchString = '';
+    inputBufferLength = 0;
 
     // Dispose quickpick if exists
     if (quickPick) {
@@ -299,4 +312,14 @@ function escapeRegExp(string: string): string {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function deactivate(): void { } 
+export function deactivate(): void {
+    // Clean up any remaining state
+    const editor = vscode.window.activeTextEditor;
+    if (editor && inJumpMode) {
+        exitJumpMode(editor);
+    }
+
+    // Explicitly dispose decoration types
+    matchDecorationType.dispose();
+    labelDecorationType.dispose();
+} 
