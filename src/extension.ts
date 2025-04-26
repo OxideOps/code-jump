@@ -39,6 +39,8 @@ let labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createT
 let inJumpMode: boolean = false;
 let matchingLabels: boolean = false;
 let inputBufferLength: number = 0;
+let searchString: string = '';
+let lastQuickPickValue: string = '';
 
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
@@ -64,6 +66,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Enter jump mode
         inJumpMode = true;
+        lastQuickPickValue = '';
 
         // Create QuickPick input that minimizes UI
         quickPick = vscode.window.createQuickPick();
@@ -78,27 +81,27 @@ export function activate(context: vscode.ExtensionContext): void {
         // Listen to value changes to update highlights in real-time
         quickPick.onDidChangeValue(value => {
             const searchChar = value[value.length - 1].toUpperCase();
-            const match = matches.find(lp => lp.label === searchChar);
+            const matchedLabel = matches.find(lp => lp.label === searchChar);
             const backspaced = value.length < inputBufferLength;
 
             inputBufferLength = value.length;
 
-            if (backspaced && !matchingLabels) {
-                findAndHighlightMatches(editor, value);
-            } else if (match) {
-                const position = match.info.start;
+            if (!backspaced && matchedLabel) {
+                const position = matchedLabel.info.start;
                 editor.selection = new vscode.Selection(position, position);
                 editor.revealRange(new vscode.Range(position, position));
                 exitJumpMode(editor);
-            } else if (matches.some(lp => lp.label.startsWith(searchChar))) {
+            } else if (!backspaced && matches.some(lp => lp.label.startsWith(searchChar))) {
                 matchingLabels = true;
                 matches = matches.filter(lp => lp.label.startsWith(searchChar));
                 matches.forEach(match => {
                     match.label = match.label.substring(searchChar.length);
                 });
+                quickPick!.value = searchChar.toLowerCase();
                 updateDecorations(editor);
             } else if (!matchingLabels) {
-                findAndHighlightMatches(editor, value);
+                searchString = value;
+                findAndHighlightMatches(editor);
             }
         });
 
@@ -161,11 +164,9 @@ function generateLabels(matchInfos: MatchInfo[]): string[] {
     return labels;
 }
 
-function findAndHighlightMatches(editor: vscode.TextEditor, searchString: string): void {
+function findAndHighlightMatches(editor: vscode.TextEditor): void {
     if (!searchString) {
-        // Clear previous decorations
-        editor.setDecorations(matchDecorationType, []);
-        editor.setDecorations(labelDecorationType, []);
+        clearDecorations(editor);
         return;
     }
 
@@ -262,6 +263,7 @@ function exitJumpMode(editor: vscode.TextEditor): void {
     clearDecorations(editor);
     matches = [];
     matchingLabels = false;
+    searchString = '';
 
     // Dispose quickpick if exists
     if (quickPick) {
