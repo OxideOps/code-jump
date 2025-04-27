@@ -21,6 +21,20 @@ A quick navigation extension for VS Code inspired by AceJump/EasyMotion plugins 
 4. Use backspace to refine your search
 5. Press `Escape` to exit Code Jump mode
 
+## Demos
+
+- Type as many characters of target without conflicting with a label
+
+  ![search](https://github.com/OxideOps/code-jump/blob/main/media/search.gif)
+
+- Uses 2 character labels when necessary, and narrows search after first character is pressed
+
+  ![multi-char](https://github.com/OxideOps/code-jump/blob/main/media/multi-char.gif)
+
+- Supports backspacing before and after partially matching a label
+
+  ![backspace](https://github.com/OxideOps/code-jump/blob/main/media/backspace.gif)
+
 ## Requirements
 
 - VS Code 1.60.0 or higher
