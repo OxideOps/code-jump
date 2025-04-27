@@ -63,6 +63,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Enter jump mode
         inJumpMode = true;
+        vscode.commands.executeCommand('setContext', 'quick-jump.inJumpMode', true);
 
         // Create QuickPick input that minimizes UI
         quickPick = vscode.window.createQuickPick();
@@ -90,7 +91,8 @@ export function activate(context: vscode.ExtensionContext): void {
                     editQuickPick(searchString);
                     findAndHighlightMatches(editor);
                 } else {
-                    exitJumpMode(editor);
+                    searchString = '';
+                    clearDecorations(editor);
                 }
                 return;
             }
@@ -295,6 +297,7 @@ function clearDecorations(editor: vscode.TextEditor): void {
 }
 
 function exitJumpMode(editor: vscode.TextEditor): void {
+    vscode.commands.executeCommand('setContext', 'quick-jump.inJumpMode', false);
     inJumpMode = false;
     clearDecorations(editor);
     matches = [];
@@ -317,6 +320,7 @@ export function deactivate(): void {
     // Clean up any remaining state
     const editor = vscode.window.activeTextEditor;
     if (editor && inJumpMode) {
+        vscode.commands.executeCommand('setContext', 'quick-jump.inJumpMode', false);
         exitJumpMode(editor);
     }
 

@@ -42,12 +42,13 @@
                 "command": "quick-jump.startJump",
                 "key": "ctrl+;",
                 "mac": "cmd+;",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && !quick-jump.inJumpMode"
             },
             {
                 "command": "quick-jump.escapeJumpMode",
-                "key": "escape",
-                "when": "editorTextFocus && quick-jump.inJumpMode"
+                "key": "ctrl+;",
+                "mac": "cmd+;",
+                "when": "!editorTextFocus && quick-jump.inJumpMode"
             }
         ]
     },
