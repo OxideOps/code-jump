@@ -89,11 +89,10 @@ export function activate(context: vscode.ExtensionContext): void {
                 if (matchingLabels) {
                     matchingLabels = false;
                     editQuickPick(searchString);
-                    findAndHighlightMatches(editor);
                 } else {
                     searchString = '';
-                    clearDecorations(editor);
                 }
+                findAndHighlightMatches(editor);
                 return;
             }
 
@@ -199,6 +198,7 @@ function generateLabels(matchInfos: MatchInfo[]): string[] {
 
 function findAndHighlightMatches(editor: vscode.TextEditor): void {
     if (!searchString) {
+        matches = [];
         clearDecorations(editor);
         return;
     }
