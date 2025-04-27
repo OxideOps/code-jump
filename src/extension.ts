@@ -61,12 +61,6 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
-        // If already in jump mode, exit
-        if (inJumpMode) {
-            exitJumpMode(editor);
-            return;
-        }
-
         // Enter jump mode
         inJumpMode = true;
 
@@ -104,10 +98,15 @@ export function activate(context: vscode.ExtensionContext): void {
             const searchChar = value[value.length - 1].toUpperCase();
             const matchedLabel = matches.find(lp => lp.label === searchChar);
 
-
             if (!backspaced && matchedLabel) {
                 const position = matchedLabel.info.start;
-                editor.selection = new vscode.Selection(position, position);
+                // If a selection is active, keep the anchor and move the active end
+                // Otherwise, just move the cursor to the target position
+                if (!editor.selection.isEmpty) {
+                    editor.selection = new vscode.Selection(editor.selection.anchor, position);
+                } else {
+                    editor.selection = new vscode.Selection(position, position);
+                }
                 editor.revealRange(new vscode.Range(position, position));
                 exitJumpMode(editor);
             } else if (!backspaced && matches.some(lp => lp.label.startsWith(searchChar))) {

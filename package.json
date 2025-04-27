@@ -47,7 +47,7 @@
             {
                 "command": "quick-jump.escapeJumpMode",
                 "key": "escape",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && quick-jump.inJumpMode"
             }
         ]
     },

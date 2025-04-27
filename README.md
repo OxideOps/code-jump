@@ -8,9 +8,10 @@ A quick navigation extension for VS Code inspired by AceJump/EasyMotion plugins 
 - Press `Ctrl+;` (or `Cmd+;` on Mac) to activate Quick Jump mode
 - Type characters to highlight matching occurrences in the visible editor area
 - Each match gets a unique character label that you can press to jump directly to that location
-- Supports multi-character labels for efficient navigation when there are many matches
+- Characters are chosen for labels in order of ease of pressing
 - Smart label generation that avoids using characters that conflict with the next character in target text
 - Supports backspacing when searching and typing labels
+- Integrates powerfully with vim visual mode, allowing selections to be extended to presize locations
 
 ## Usage
 
@@ -23,13 +24,6 @@ A quick navigation extension for VS Code inspired by AceJump/EasyMotion plugins 
 ## Requirements
 
 - VS Code 1.60.0 or higher
-
-## Installation
-
-1. Open VS Code
-2. Go to Extensions (Ctrl+Shift+X)
-3. Search for "Quick Jump"
-4. Click Install
 
 ## Extension Settings
 
