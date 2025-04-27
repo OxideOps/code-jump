@@ -54,8 +54,8 @@ let matches: Match[] = [];
 const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
 
 export function activate(context: vscode.ExtensionContext): void {
-    // Register the main quick jump command
-    const startJumpDisposable = vscode.commands.registerCommand('quick-jump.startJump', function () {
+    // Register the main code jump command
+    const startJumpDisposable = vscode.commands.registerCommand('code-jump.startJump', function () {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             return;
@@ -63,7 +63,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Enter jump mode
         inJumpMode = true;
-        vscode.commands.executeCommand('setContext', 'quick-jump.inJumpMode', true);
+        vscode.commands.executeCommand('setContext', 'code-jump.inJumpMode', true);
 
         // Create QuickPick input that minimizes UI
         quickPick = vscode.window.createQuickPick();
@@ -136,7 +136,7 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     // Register the escape jump mode command
-    const escJumpDisposable = vscode.commands.registerCommand('quick-jump.escapeJumpMode', () => {
+    const escJumpDisposable = vscode.commands.registerCommand('code-jump.escapeJumpMode', () => {
         if (inJumpMode) {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
@@ -297,7 +297,7 @@ function clearDecorations(editor: vscode.TextEditor): void {
 }
 
 function exitJumpMode(editor: vscode.TextEditor): void {
-    vscode.commands.executeCommand('setContext', 'quick-jump.inJumpMode', false);
+    vscode.commands.executeCommand('setContext', 'code-jump.inJumpMode', false);
     inJumpMode = false;
     clearDecorations(editor);
     matches = [];
@@ -320,7 +320,7 @@ export function deactivate(): void {
     // Clean up any remaining state
     const editor = vscode.window.activeTextEditor;
     if (editor && inJumpMode) {
-        vscode.commands.executeCommand('setContext', 'quick-jump.inJumpMode', false);
+        vscode.commands.executeCommand('setContext', 'code-jump.inJumpMode', false);
         exitJumpMode(editor);
     }
 

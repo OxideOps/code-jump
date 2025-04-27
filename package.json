@@ -1,11 +1,11 @@
 {
-    "name": "quick-jump",
-    "displayName": "Quick Jump",
+    "name": "codejump",
+    "displayName": "Code Jump",
     "description": "Fast cursor navigation for VS Code - jump to any position in the visible editor area with a few keystrokes",
     "version": "0.0.1",
     "repository": {
         "type": "git",
-        "url": "https://github.com/OxideOps/quick-jump.git"
+        "url": "https://github.com/OxideOps/code-jump.git"
     },
     "license": "MIT",
     "publisher": "OxideOps",
@@ -29,26 +29,26 @@
     "contributes": {
         "commands": [
             {
-                "command": "quick-jump.startJump",
-                "title": "Quick Jump: Start Jump"
+                "command": "code-jump.startJump",
+                "title": "Code Jump: Start Jump"
             },
             {
-                "command": "quick-jump.escapeJumpMode",
-                "title": "Quick Jump: Exit Jump Mode"
+                "command": "code-jump.escapeJumpMode",
+                "title": "Code Jump: Exit Jump Mode"
             }
         ],
         "keybindings": [
             {
-                "command": "quick-jump.startJump",
+                "command": "code-jump.startJump",
                 "key": "ctrl+;",
                 "mac": "cmd+;",
-                "when": "editorTextFocus && !quick-jump.inJumpMode"
+                "when": "editorTextFocus && !code-jump.inJumpMode"
             },
             {
-                "command": "quick-jump.escapeJumpMode",
+                "command": "code-jump.escapeJumpMode",
                 "key": "ctrl+;",
                 "mac": "cmd+;",
-                "when": "!editorTextFocus && quick-jump.inJumpMode"
+                "when": "!editorTextFocus && code-jump.inJumpMode"
             }
         ]
     },
