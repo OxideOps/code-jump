@@ -117,7 +117,9 @@ export function activate(context: vscode.ExtensionContext): void {
                 });
                 editQuickPick(searchChar.toLowerCase());
                 updateDecorations(editor);
-            } else if (!matchingLabels) {
+            } else if (matchingLabels) {
+                editQuickPick(value.slice(0, -1));
+            } else {
                 searchString = value;
                 findAndHighlightMatches(editor);
             }
