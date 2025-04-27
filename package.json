@@ -1,11 +1,11 @@
 {
-    "name": "ace-jump",
-    "displayName": "Ace Jump",
+    "name": "quick-jump",
+    "displayName": "Quick Jump",
     "description": "Fast cursor navigation for VS Code - jump to any position in the visible editor area with a few keystrokes",
     "version": "0.0.1",
     "repository": {
         "type": "git",
-        "url": "https://github.com/OxideOps/ace-jump.git"
+        "url": "https://github.com/OxideOps/quick-jump.git"
     },
     "license": "MIT",
     "publisher": "OxideOps",
@@ -29,23 +29,23 @@
     "contributes": {
         "commands": [
             {
-                "command": "ace-jump.startJump",
-                "title": "Ace Jump: Start Jump"
+                "command": "quick-jump.startJump",
+                "title": "Quick Jump: Start Jump"
             },
             {
-                "command": "extension.escapeJumpMode",
-                "title": "Ace Jump: Exit Jump Mode"
+                "command": "quick-jump.escapeJumpMode",
+                "title": "Quick Jump: Exit Jump Mode"
             }
         ],
         "keybindings": [
             {
-                "command": "ace-jump.startJump",
+                "command": "quick-jump.startJump",
                 "key": "ctrl+;",
                 "mac": "cmd+;",
                 "when": "editorTextFocus"
             },
             {
-                "command": "extension.escapeJumpMode",
+                "command": "quick-jump.escapeJumpMode",
                 "key": "escape",
                 "when": "editorTextFocus"
             }

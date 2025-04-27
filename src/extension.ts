@@ -54,8 +54,8 @@ let matches: Match[] = [];
 const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
 
 export function activate(context: vscode.ExtensionContext): void {
-    // Register the main ace jump command
-    const startJumpDisposable = vscode.commands.registerCommand('ace-jump.startJump', function () {
+    // Register the main quick jump command
+    const startJumpDisposable = vscode.commands.registerCommand('quick-jump.startJump', function () {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             return;
@@ -134,7 +134,7 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     // Register the escape jump mode command
-    const escJumpDisposable = vscode.commands.registerCommand('extension.escapeJumpMode', () => {
+    const escJumpDisposable = vscode.commands.registerCommand('quick-jump.escapeJumpMode', () => {
         if (inJumpMode) {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
