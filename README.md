@@ -31,15 +31,15 @@ While several navigation extensions exist for VS Code, Code Jump aims to closely
 
 - Type as many characters of target without conflicting with a label
 
-  ![search](https://github.com/OxideOps/code-jump/blob/main/media/search.gif)
+  ![search](media/search.gif)
 
 - Uses 2 character labels when necessary, and narrows search after first character is pressed
 
-  ![multi-char](https://github.com/OxideOps/code-jump/blob/main/media/multi-char.gif)
+  ![multi-char](media/multi-char.gif)
 
 - Supports backspacing before and after partially matching a label
 
-  ![backspace](https://github.com/OxideOps/code-jump/blob/main/media/backspace.gif)
+  ![backspace](media/backspace.gif)
 
 ## Requirements
 

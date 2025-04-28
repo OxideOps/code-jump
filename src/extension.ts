@@ -14,9 +14,6 @@ interface MatchInfo {
     nextNextChar: string;
 }
 
-// Configuration options
-const MAX_MATCHES = 300;
-
 // Decoration type for matched characters
 let matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     border: '2px solid #569cd6',
@@ -44,6 +41,7 @@ let matchingLabels: boolean = false;
 let inputBufferLength: number = 0;
 let searchString: string = '';
 let editedQuickPick: boolean = false;
+let matechesExceeded: boolean = false;
 
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
@@ -169,6 +167,7 @@ function generateLabels(matchInfos: MatchInfo[]): string[] {
     const labels = Array.from({ length: count }, (_, i) => firstChars[i % firstChars.length]);
 
     if (count <= firstChars.length) {
+        matechesExceeded = false;
         return labels;
     }
 
@@ -188,11 +187,15 @@ function generateLabels(matchInfos: MatchInfo[]): string[] {
     for (let i = 0; i < labels.length; i++) {
         const firstChar = labels[i];
         const nextValue = secondCharMap.get(firstChar)!.values().next();
-        if (nextValue.done) continue;
+        if (nextValue.done) {
+            matechesExceeded = true;
+            return [];
+        }
         labels[i] = firstChar + nextValue.value;
         secondCharMap.get(firstChar)!.delete(nextValue.value);
     }
 
+    matechesExceeded = false;
     return labels;
 }
 
@@ -212,8 +215,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
     let matchInfos: MatchInfo[] = [];
     let matchCount = 0;
 
-    // Limit to MAX_MATCHES to prevent performance issues
-    while ((match = searchRegex.exec(text)) !== null && matchCount < MAX_MATCHES) {
+    while ((match = searchRegex.exec(text)) !== null) {
         const startPos = editor.document.positionAt(match.index);
         const endPos = editor.document.positionAt(match.index + searchString.length);
 
@@ -238,10 +240,14 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
     // Generate a unique label for each match, avoiding next character conflicts
     const labels = generateLabels(matchInfos);
 
-    matches = matchInfos.map((match, index) => ({
-        label: labels[index],
-        info: match
-    }));
+    if (matechesExceeded) {
+        matches = [];
+    } else {
+        matches = matchInfos.map((match, index) => ({
+            label: labels[index],
+            info: match
+        }));
+    }
 
     updateDecorations(editor);
 }
@@ -273,9 +279,7 @@ function updateDecorations(editor: vscode.TextEditor): void {
 
     // Update the QuickPick title with match count
     if (quickPick) {
-        quickPick.title = matches.length >= MAX_MATCHES ?
-            `${matches.length}+ matches (limited)` :
-            `${matches.length} matches`;
+        quickPick.title = matechesExceeded ? `Too many matches!` : `${matches.length} matches`;
     }
 }
 
