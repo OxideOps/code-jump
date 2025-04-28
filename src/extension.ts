@@ -102,7 +102,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 // If a selection is active, keep the anchor and move the active end
                 // Otherwise, just move the cursor to the target position
                 if (!editor.selection.isEmpty) {
-                    editor.selection = new vscode.Selection(editor.selection.anchor, position);
+                    editor.selection = new vscode.Selection(editor.selection.anchor, position.translate(0, 1));
                 } else {
                     editor.selection = new vscode.Selection(position, position);
                 }
