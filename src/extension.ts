@@ -13,25 +13,20 @@ interface MatchInfo {
     nextChar: string;
     nextNextChar: string;
 }
+const color = '#569cd6';
 
 // Decoration type for matched characters
-let matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    border: '2px solid #569cd6',
+const matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
+    border: `2px solid ${color}`,
     backgroundColor: 'rgba(38, 79, 120, 0.5)',
-    // @ts-ignore - borderRadius is not in the type definition but works in practice
-    borderRadius: '3px'
 });
 
 // Decoration type for character labels
-let labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
+const labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     before: {
-        margin: '0 3px 0 0',
-        backgroundColor: '#569cd6',
+        backgroundColor: color,
         color: 'white',
         fontWeight: 'bold',
-        // @ts-ignore - borderRadius is not in the type definition but works in practice
-        borderRadius: '2px',
-        padding: '0 3px'
     }
 });
 
@@ -255,6 +250,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
 function updateDecorations(editor: vscode.TextEditor): void {
     const matchRanges: vscode.DecorationOptions[] = [];
     const labelDecorations: vscode.DecorationOptions[] = [];
+    const width = matches.length && matches[0].label.length === 2 ? '2ch' : '1ch';
 
     matches.forEach(match => {
         // Add match highlighting
@@ -267,6 +263,8 @@ function updateDecorations(editor: vscode.TextEditor): void {
             range: new vscode.Range(match.info.start, match.info.start),
             renderOptions: {
                 before: {
+                    width,
+                    margin: `0 0 0 -${width}`,
                     contentText: match.label
                 }
             }
