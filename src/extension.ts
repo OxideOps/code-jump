@@ -250,21 +250,46 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
 function updateDecorations(editor: vscode.TextEditor): void {
     const matchRanges: vscode.DecorationOptions[] = [];
     const labelDecorations: vscode.DecorationOptions[] = [];
-    const width = matches.length && matches[0].label.length === 2 ? '2ch' : '1ch';
+    let line = 0;
+    let nextColumn = 0;
+    let count = matches.length;
 
     matches.forEach(match => {
+        if (match.info.start.line > line) {
+            line = match.info.start.line;
+            nextColumn = 0;
+        }
+        if (match.info.start.character < nextColumn) {
+            count--;
+            return;
+        }
+
+        const width = match.label.length;
+        const displayBefore = (match.info.start.character - width) >= nextColumn;
+        nextColumn = match.info.range.end.character;
+        if (!displayBefore) nextColumn += width;
+
         // Add match highlighting
         matchRanges.push({
             range: match.info.range
         });
 
+        // Add match highlighting
+        matchRanges.push({
+            range: match.info.range
+        });
+
+        const labelPos = displayBefore ? match.info.start : match.info.range.end.translate(0, width);
+        const overflow = labelPos.character - editor.document.lineAt(line).text.length;
+        const shift = Math.min(width, width - overflow);
+
         // Add label decoration
         labelDecorations.push({
-            range: new vscode.Range(match.info.start, match.info.start),
+            range: new vscode.Range(labelPos, labelPos),
             renderOptions: {
                 before: {
-                    width,
-                    margin: `0 0 0 -${width}`,
+                    width: `${width}ch`,
+                    margin: `0 0 0 -${shift}ch`,
                     contentText: match.label
                 }
             }
@@ -277,7 +302,7 @@ function updateDecorations(editor: vscode.TextEditor): void {
 
     // Update the QuickPick title with match count
     if (quickPick) {
-        quickPick.title = matechesExceeded ? `Too many matches!` : `${matches.length} matches`;
+        quickPick.title = matechesExceeded ? `Too many matches!` : `${count} matches`;
     }
 }
 
