@@ -13,25 +13,20 @@ interface MatchInfo {
     nextChar: string;
     nextNextChar: string;
 }
+const color = '#569cd6';
 
 // Decoration type for matched characters
-let matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    border: '2px solid #569cd6',
+const matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
+    border: `2px solid ${color}`,
     backgroundColor: 'rgba(38, 79, 120, 0.5)',
-    // @ts-ignore - borderRadius is not in the type definition but works in practice
-    borderRadius: '3px'
 });
 
 // Decoration type for character labels
-let labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
+const labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     before: {
-        margin: '0 3px 0 0',
-        backgroundColor: '#569cd6',
+        backgroundColor: color,
         color: 'white',
         fontWeight: 'bold',
-        // @ts-ignore - borderRadius is not in the type definition but works in practice
-        borderRadius: '2px',
-        padding: '0 3px'
     }
 });
 
@@ -51,7 +46,22 @@ let matches: Match[] = [];
 // Characters used for labels - chosen for clarity and ease of reach on keyboard
 const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
 
+// Configuration options
+let useInlineLabels: boolean = false;
+
 export function activate(context: vscode.ExtensionContext): void {
+    // Load configuration
+    const config = vscode.workspace.getConfiguration('code-jump');
+    useInlineLabels = config.get<boolean>('inlineLabels') || false;
+
+    // Watch for configuration changes
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('code-jump.inlineLabels')) {
+            const config = vscode.workspace.getConfiguration('code-jump');
+            useInlineLabels = config.get<boolean>('inlineLabels') || false;
+        }
+    }));
+
     // Register the main code jump command
     const startJumpDisposable = vscode.commands.registerCommand('code-jump.startJump', function () {
         const editor = vscode.window.activeTextEditor;
@@ -255,18 +265,41 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
 function updateDecorations(editor: vscode.TextEditor): void {
     const matchRanges: vscode.DecorationOptions[] = [];
     const labelDecorations: vscode.DecorationOptions[] = [];
+    let line = 0;
+    let nextColumn = 0;
+    let count = matches.length;
 
     matches.forEach(match => {
+        if (match.info.start.line > line) {
+            line = match.info.start.line;
+            nextColumn = 0;
+        }
+        if (!useInlineLabels && match.info.start.character < nextColumn) {
+            count--;
+            return;
+        }
+
+        const width = match.label.length;
+        const displayBefore = useInlineLabels || (match.info.start.character - width) >= nextColumn;
+        nextColumn = match.info.range.end.character;
+        if (!displayBefore) nextColumn += width;
+
         // Add match highlighting
         matchRanges.push({
             range: match.info.range
         });
 
+        const labelPos = displayBefore ? match.info.start : match.info.range.end.translate(0, width);
+        const overflow = labelPos.character - editor.document.lineAt(line).text.length;
+        const shift = useInlineLabels ? 0 : Math.min(width, width - overflow);
+
         // Add label decoration
         labelDecorations.push({
-            range: new vscode.Range(match.info.start, match.info.start),
+            range: new vscode.Range(labelPos, labelPos),
             renderOptions: {
                 before: {
+                    width: `${width}ch`,
+                    margin: `0 0 0 -${shift}ch`,
                     contentText: match.label
                 }
             }
@@ -279,7 +312,7 @@ function updateDecorations(editor: vscode.TextEditor): void {
 
     // Update the QuickPick title with match count
     if (quickPick) {
-        quickPick.title = matechesExceeded ? `Too many matches!` : `${matches.length} matches`;
+        quickPick.title = matechesExceeded ? `Too many matches!` : `${count} matches`;
     }
 }
 

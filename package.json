@@ -57,7 +57,17 @@
                 "mac": "cmd+;",
                 "when": "!editorTextFocus && code-jump.inJumpMode"
             }
-        ]
+        ],
+        "configuration": {
+            "title": "Code Jump",
+            "properties": {
+                "code-jump.inlineLabels": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Display jump labels inline with the text rather than overlaid on top of it"
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run package",
