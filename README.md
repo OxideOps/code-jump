@@ -14,6 +14,7 @@ While several navigation extensions exist for VS Code, Code Jump aims to closely
 - Smart label generation that avoids using characters that conflict with the next character in target text
 - Supports backspacing when searching and typing labels
 - Integrates powerfully with vim visual mode, allowing selections to be extended to presize locations
+- Optionally insert labels inline with text to avoid labels covering possible matches
 
 ## Usage
 
@@ -26,6 +27,7 @@ While several navigation extensions exist for VS Code, Code Jump aims to closely
 
 1. Modify `code-jump.startJump` keybinding for entering jump mode.
 2. Modify `code-jump.escapeJumpMode` keybinding for exiting jump mode.
+3. Configure `code-jump.inlineLabels` to `true` to display jump labels inline with the text, rather than as overlays. Defaults to `false`.
 
 ## Demos
 
@@ -40,6 +42,10 @@ While several navigation extensions exist for VS Code, Code Jump aims to closely
 - Supports backspacing before and after partially matching a label
 
   ![backspace](media/backspace.gif)
+
+- Can optionally insert labels inline with text to avoid labels covering possible matches
+
+  ![inline](media/inline.gif)
 
 ## Requirements
 
