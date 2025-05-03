@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 interface Match {
     label: string;
     info: MatchInfo;
+    displayBefore: boolean;
 }
 
 // Interface for storing match information
@@ -36,7 +37,7 @@ let matchingLabels: boolean = false;
 let inputBufferLength: number = 0;
 let searchString: string = '';
 let editedQuickPick: boolean = false;
-let matechesExceeded: boolean = false;
+let matchesExceeded: boolean = false;
 
 let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 
@@ -153,12 +154,12 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     });
 
-    context.subscriptions.push(startJumpDisposable);
-    context.subscriptions.push(escJumpDisposable);
-
-    // Add decorations to subscription for proper cleanup
-    context.subscriptions.push(matchDecorationType);
-    context.subscriptions.push(labelDecorationType);
+    context.subscriptions.push(
+        startJumpDisposable,
+        escJumpDisposable,
+        matchDecorationType,
+        labelDecorationType
+    );
 }
 
 function editQuickPick(value: string): void {
@@ -169,44 +170,83 @@ function editQuickPick(value: string): void {
 }
 
 // Generate unique labels efficiently
-function generateLabels(matchInfos: MatchInfo[]): string[] {
+function generateLabels(matchInfos: MatchInfo[]): Match[] {
     const nextChars = new Set(matchInfos.map(match => match.nextChar.toUpperCase()));
     const count = matchInfos.length;
+    if (count === 0) {
+        matchesExceeded = false;
+        return [];
+    }
     const labelCharsArray = labelChars.split('');
-    const firstChars = labelCharsArray.filter(char => !nextChars.has(char));
-    const labels = Array.from({ length: count }, (_, i) => firstChars[i % firstChars.length]);
+    const firstCharCandidates = labelCharsArray.filter(char => !nextChars.has(char));
+    if (firstCharCandidates.length === 0) {
+        matchesExceeded = true;
+        return [];
+    }
+    let labels = Array.from({ length: count }, (_, i) => firstCharCandidates[i % firstCharCandidates.length]);
 
-    if (count <= firstChars.length) {
-        matechesExceeded = false;
-        return labels;
+    if (count > firstCharCandidates.length) {
+        const firstCharIndices = new Map<string, number[]>();
+        labels.forEach((firstChar, i) => {
+            const arr = firstCharIndices.get(firstChar);
+            if (arr) arr.push(i);
+            else firstCharIndices.set(firstChar, [i]);
+        });
+
+        const secondCharCandidates = new Map<string, Set<string>>();
+        firstCharIndices.forEach((indices, firstChar) => {
+            if (indices.length > 1) {
+                const set = new Set(labelCharsArray);
+                indices.forEach(i => set.delete(matchInfos[i].nextNextChar.toUpperCase()));
+                secondCharCandidates.set(firstChar, set);
+            }
+        });
+
+        for (const [firstChar, indices] of firstCharIndices) {
+            if (indices.length > 1) {
+                for (const i of indices) {
+                    const set = secondCharCandidates.get(firstChar)!;
+                    const nextValue = set.values().next();
+                    if (nextValue.done) {
+                        matchesExceeded = true;
+                        return [];
+                    }
+                    labels[i] = firstChar + nextValue.value;
+                    set.delete(nextValue.value);
+                }
+            }
+        }
     }
 
-    // For matches that need two-character labels
-    const secondCharMap = new Map<string, Set<string>>();
+    matchesExceeded = false;
+    // Map MatchInfo to Match objects
+    const initialMatches: Match[] = matchInfos.map((info, i) => ({
+        label: labels[i],
+        info,
+        displayBefore: false
+    }));
 
-    // Group matches by their first label character
-    matchInfos.forEach((match, i) => {
-        const firstChar = labels[i];
-        if (!secondCharMap.has(firstChar)) {
-            secondCharMap.set(firstChar, new Set(labelCharsArray));
-        }
-        secondCharMap.get(firstChar)!.delete(match.nextNextChar.toUpperCase());
-    });
+    // Filter overlapping matches based on start position and label width
+    const filteredMatches: Match[] = [];
+    let currentLine = -1;
+    let nextColumn = 0;
 
-    // Assign second characters for labels that need them
-    for (let i = 0; i < labels.length; i++) {
-        const firstChar = labels[i];
-        const nextValue = secondCharMap.get(firstChar)!.values().next();
-        if (nextValue.done) {
-            matechesExceeded = true;
-            return [];
+    for (const match of initialMatches) {
+        const { start, range } = match.info;
+        if (start.line > currentLine) {
+            currentLine = start.line;
+            nextColumn = 0;
         }
-        labels[i] = firstChar + nextValue.value;
-        secondCharMap.get(firstChar)!.delete(nextValue.value);
+        if (!useInlineLabels && start.character < nextColumn) {
+            continue;
+        }
+        const width = match.label.length;
+        const displayBefore = useInlineLabels || (start.character - width) >= nextColumn;
+        nextColumn = range.end.character + (displayBefore ? 0 : width);
+        filteredMatches.push({ label: match.label, info: match.info, displayBefore });
     }
 
-    matechesExceeded = false;
-    return labels;
+    return filteredMatches;
 }
 
 function findAndHighlightMatches(editor: vscode.TextEditor): void {
@@ -223,7 +263,6 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
     // Find all matches
     let match: RegExpExecArray | null;
     let matchInfos: MatchInfo[] = [];
-    let matchCount = 0;
 
     while ((match = searchRegex.exec(text)) !== null) {
         const startPos = editor.document.positionAt(match.index);
@@ -241,23 +280,12 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
                     nextChar,
                     nextNextChar
                 });
-                matchCount++;
                 break;
             }
         }
     }
 
-    // Generate a unique label for each match, avoiding next character conflicts
-    const labels = generateLabels(matchInfos);
-
-    if (matechesExceeded) {
-        matches = [];
-    } else {
-        matches = matchInfos.map((match, index) => ({
-            label: labels[index],
-            info: match
-        }));
-    }
+    matches = generateLabels(matchInfos);
 
     updateDecorations(editor);
 }
@@ -266,23 +294,15 @@ function updateDecorations(editor: vscode.TextEditor): void {
     const matchRanges: vscode.DecorationOptions[] = [];
     const labelDecorations: vscode.DecorationOptions[] = [];
     let line = 0;
-    let nextColumn = 0;
     let count = matches.length;
 
     matches.forEach(match => {
         if (match.info.start.line > line) {
             line = match.info.start.line;
-            nextColumn = 0;
-        }
-        if (!useInlineLabels && match.info.start.character < nextColumn) {
-            count--;
-            return;
         }
 
         const width = match.label.length;
-        const displayBefore = useInlineLabels || (match.info.start.character - width) >= nextColumn;
-        nextColumn = match.info.range.end.character;
-        if (!displayBefore) nextColumn += width;
+        const displayBefore = match.displayBefore;
 
         // Add match highlighting
         matchRanges.push({
@@ -312,7 +332,7 @@ function updateDecorations(editor: vscode.TextEditor): void {
 
     // Update the QuickPick title with match count
     if (quickPick) {
-        quickPick.title = matechesExceeded ? `Too many matches!` : `${count} matches`;
+        quickPick.title = matchesExceeded ? `Too many matches!` : `${count} matches`;
     }
 }
 
