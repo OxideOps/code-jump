@@ -46,7 +46,22 @@ let matches: Match[] = [];
 // Characters used for labels - chosen for clarity and ease of reach on keyboard
 const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
 
+// Configuration options
+let useInlineLabels: boolean = false;
+
 export function activate(context: vscode.ExtensionContext): void {
+    // Load configuration
+    const config = vscode.workspace.getConfiguration('code-jump');
+    useInlineLabels = config.get<boolean>('inlineLabels') || false;
+
+    // Watch for configuration changes
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('code-jump.inlineLabels')) {
+            const config = vscode.workspace.getConfiguration('code-jump');
+            useInlineLabels = config.get<boolean>('inlineLabels') || false;
+        }
+    }));
+
     // Register the main code jump command
     const startJumpDisposable = vscode.commands.registerCommand('code-jump.startJump', function () {
         const editor = vscode.window.activeTextEditor;
@@ -259,13 +274,13 @@ function updateDecorations(editor: vscode.TextEditor): void {
             line = match.info.start.line;
             nextColumn = 0;
         }
-        if (match.info.start.character < nextColumn) {
+        if (!useInlineLabels && match.info.start.character < nextColumn) {
             count--;
             return;
         }
 
         const width = match.label.length;
-        const displayBefore = (match.info.start.character - width) >= nextColumn;
+        const displayBefore = useInlineLabels || (match.info.start.character - width) >= nextColumn;
         nextColumn = match.info.range.end.character;
         if (!displayBefore) nextColumn += width;
 
@@ -274,14 +289,9 @@ function updateDecorations(editor: vscode.TextEditor): void {
             range: match.info.range
         });
 
-        // Add match highlighting
-        matchRanges.push({
-            range: match.info.range
-        });
-
         const labelPos = displayBefore ? match.info.start : match.info.range.end.translate(0, width);
         const overflow = labelPos.character - editor.document.lineAt(line).text.length;
-        const shift = Math.min(width, width - overflow);
+        const shift = useInlineLabels ? 0 : Math.min(width, width - overflow);
 
         // Add label decoration
         labelDecorations.push({
