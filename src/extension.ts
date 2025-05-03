@@ -255,38 +255,25 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
         clearDecorations(editor);
         return;
     }
-
-    const text = editor.document.getText();
-    const searchRegex = new RegExp(escapeRegExp(searchString), 'gi');
-    const visibleRanges = editor.visibleRanges;
-
-    // Find all matches
-    let match: RegExpExecArray | null;
-    let matchInfos: MatchInfo[] = [];
-
-    while ((match = searchRegex.exec(text)) !== null) {
-        const startPos = editor.document.positionAt(match.index);
-        const endPos = editor.document.positionAt(match.index + searchString.length);
-
-        // Only include matches in the visible ranges
-        for (const visibleRange of visibleRanges) {
-            if (startPos.line >= visibleRange.start.line && endPos.line <= visibleRange.end.line) {
-                const nextChar = getNextCharacter(editor, endPos);
-                const nextNextChar = getNextCharacter(editor, endPos.translate(0, 1));
-                // Store match information with position
-                matchInfos.push({
-                    start: startPos,
-                    range: new vscode.Range(startPos, endPos),
-                    nextChar,
-                    nextNextChar
-                });
-                break;
-            }
+    const rx = new RegExp(escapeRegExp(searchString), "gi");
+    const infos: MatchInfo[] = [];
+    for (const vr of editor.visibleRanges) {
+        const slice = editor.document.getText(vr);
+        const base = editor.document.offsetAt(vr.start);
+        let m: RegExpExecArray | null;
+        while ((m = rx.exec(slice))) {
+            const startOff = base + m.index;
+            const startPos = editor.document.positionAt(startOff);
+            const endPos = editor.document.positionAt(startOff + searchString.length);
+            infos.push({
+                start: startPos,
+                range: new vscode.Range(startPos, endPos),
+                nextChar: getNextCharacter(editor, endPos),
+                nextNextChar: getNextCharacter(editor, endPos.translate(0, 1))
+            });
         }
     }
-
-    matches = generateLabels(matchInfos);
-
+    matches = generateLabels(infos);
     updateDecorations(editor);
 }
 
