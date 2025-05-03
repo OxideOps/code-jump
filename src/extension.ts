@@ -28,6 +28,7 @@ const labelDecorationType: vscode.TextEditorDecorationType = vscode.window.creat
         backgroundColor: color,
         color: 'white',
         fontWeight: 'bold',
+        fontStyle: 'normal',
     }
 });
 
