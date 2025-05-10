@@ -14,23 +14,6 @@ interface MatchInfo {
     nextChar: string;
     nextNextChar: string;
 }
-const color = '#569cd6';
-
-// Decoration type for matched characters
-const matchDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    border: `2px solid ${color}`,
-    backgroundColor: 'rgba(38, 79, 120, 0.5)',
-});
-
-// Decoration type for character labels
-const labelDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    before: {
-        backgroundColor: color,
-        color: 'white',
-        fontWeight: 'bold',
-        fontStyle: 'normal',
-    }
-});
 
 // Track if we're in jump mode
 let inJumpMode: boolean = false;
@@ -51,18 +34,56 @@ const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
 // Configuration options
 let useInlineLabels: boolean = false;
 
+// Added dynamic declarations:
+let decorationColor: string = '#569cd6';
+let matchDecorationType: vscode.TextEditorDecorationType;
+let labelDecorationType: vscode.TextEditorDecorationType;
+
+// Create decoration types given a base color
+function createDecorationTypes(color: string): [vscode.TextEditorDecorationType, vscode.TextEditorDecorationType] {
+    const match = vscode.window.createTextEditorDecorationType({
+        border: `2px solid ${color}`,
+        backgroundColor: `${color}40`,
+    });
+    const label = vscode.window.createTextEditorDecorationType({
+        before: {
+            backgroundColor: color,
+            color: 'white',
+            fontWeight: 'bold',
+            fontStyle: 'normal',
+        }
+    });
+    return [match, label];
+}
+
 export function activate(context: vscode.ExtensionContext): void {
     // Load configuration
     const config = vscode.workspace.getConfiguration('code-jump');
     useInlineLabels = config.get<boolean>('inlineLabels') || false;
+    // Load decoration color and create decoration types
+    decorationColor = config.get<string>('decorationColor') || decorationColor;
+    [matchDecorationType, labelDecorationType] = createDecorationTypes(decorationColor);
 
     // Watch for configuration changes
-    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+    const configDisposable = vscode.workspace.onDidChangeConfiguration(e => {
         if (e.affectsConfiguration('code-jump.inlineLabels')) {
             const config = vscode.workspace.getConfiguration('code-jump');
             useInlineLabels = config.get<boolean>('inlineLabels') || false;
         }
-    }));
+        // Handle decoration color changes
+        if (e.affectsConfiguration('code-jump.decorationColor')) {
+            const config = vscode.workspace.getConfiguration('code-jump');
+            decorationColor = config.get<string>('decorationColor') || decorationColor;
+            // Recreate decoration types with new color
+            matchDecorationType.dispose();
+            labelDecorationType.dispose();
+            [matchDecorationType, labelDecorationType] = createDecorationTypes(decorationColor);
+            const activeEditor = vscode.window.activeTextEditor;
+            if (activeEditor) {
+                updateDecorations(activeEditor);
+            }
+        }
+    });
 
     // Register the main code jump command
     const startJumpDisposable = vscode.commands.registerCommand('code-jump.startJump', function () {
@@ -156,10 +177,11 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     context.subscriptions.push(
-        startJumpDisposable,
-        escJumpDisposable,
         matchDecorationType,
-        labelDecorationType
+        labelDecorationType,
+        configDisposable,
+        startJumpDisposable,
+        escJumpDisposable
     );
 }
 
@@ -365,11 +387,6 @@ export function deactivate(): void {
     // Clean up any remaining state
     const editor = vscode.window.activeTextEditor;
     if (editor && inJumpMode) {
-        vscode.commands.executeCommand('setContext', 'code-jump.inJumpMode', false);
         exitJumpMode(editor);
     }
-
-    // Explicitly dispose decoration types
-    matchDecorationType.dispose();
-    labelDecorationType.dispose();
 } 

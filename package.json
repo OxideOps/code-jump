@@ -2,7 +2,7 @@
     "name": "vscode-code-jump",
     "displayName": "Code Jump",
     "description": "Fast cursor navigation for VS Code - jump to any position in the visible editor area with a few keystrokes",
-    "version": "0.0.5",
+    "version": "1.0.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/OxideOps/code-jump.git"
@@ -65,6 +65,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Display jump labels inline with the text rather than overlaid on top of it"
+                },
+                "code-jump.decorationColor": {
+                    "type": "string",
+                    "default": "#569cd6",
+                    "description": "Color used for code-jump decorations (hex format)"
                 }
             }
         }

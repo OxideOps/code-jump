@@ -27,7 +27,8 @@ While several navigation extensions exist for VS Code, Code Jump aims to closely
 
 1. Modify `code-jump.startJump` keybinding for entering jump mode.
 2. Modify `code-jump.escapeJumpMode` keybinding for exiting jump mode.
-3. Configure `code-jump.inlineLabels` to `true` to display jump labels inline with the text, rather than as overlays. Defaults to `false`.
+3. Set `code-jump.inlineLabels` to `true` to display jump labels inline with the text, rather than as overlays. Defaults to `false`.
+4. Set `code-jump.decorationColor` to a hex color to change the color of the labels. Default is '#569cd6'.
 
 ## Demos
 
@@ -62,4 +63,4 @@ Please report any bugs or feature requests on the [GitHub repository](https://gi
 
 ## License
 
-MIT 
+MIT
