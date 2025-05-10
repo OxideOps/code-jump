@@ -63,4 +63,4 @@ Please report any bugs or feature requests on the [GitHub repository](https://gi
 
 ## License
 
-MIT
+GPL 3.0

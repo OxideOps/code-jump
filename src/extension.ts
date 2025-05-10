@@ -29,7 +29,7 @@ let quickPick: vscode.QuickPick<vscode.QuickPickItem> | null = null;
 let matches: Match[] = [];
 
 // Characters used for labels - chosen for clarity and ease of reach on keyboard
-const labelChars: string = 'JFKDLSHGAYTNBURMVIECOXWPZQ';
+const labelChars: string[] = Array.from('JFKDLSHGAYTNBURMVIECOXWPZQ');
 
 // Configuration options
 let useInlineLabels: boolean = false;
@@ -147,7 +147,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 matches.forEach(match => {
                     match.label = match.label.substring(searchChar.length);
                 });
-                editQuickPick(searchChar.toLowerCase());
+                editQuickPick(value[value.length - 1]);
                 updateDecorations(editor);
             } else if (matchingLabels) {
                 editQuickPick(value.slice(0, -1));
@@ -194,14 +194,13 @@ function editQuickPick(value: string): void {
 
 // Generate unique labels efficiently
 function generateLabels(matchInfos: MatchInfo[]): Match[] {
-    const nextChars = new Set(matchInfos.map(match => match.nextChar.toUpperCase()));
+    const nextChars = new Set(matchInfos.map(match => match.nextChar));
     const count = matchInfos.length;
     if (count === 0) {
         matchesExceeded = false;
         return [];
     }
-    const labelCharsArray = labelChars.split('');
-    const firstCharCandidates = labelCharsArray.filter(char => !nextChars.has(char));
+    const firstCharCandidates = labelChars.filter(char => !nextChars.has(char));
     if (firstCharCandidates.length === 0) {
         matchesExceeded = true;
         return [];
@@ -219,8 +218,8 @@ function generateLabels(matchInfos: MatchInfo[]): Match[] {
         const secondCharCandidates = new Map<string, Set<string>>();
         firstCharIndices.forEach((indices, firstChar) => {
             if (indices.length > 1) {
-                const set = new Set(labelCharsArray);
-                indices.forEach(i => set.delete(matchInfos[i].nextNextChar.toUpperCase()));
+                const set = new Set(labelChars);
+                indices.forEach(i => set.delete(matchInfos[i].nextNextChar));
                 secondCharCandidates.set(firstChar, set);
             }
         });
@@ -278,22 +277,23 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
         clearDecorations(editor);
         return;
     }
-    const rx = new RegExp(escapeRegExp(searchString), "gi");
     const infos: MatchInfo[] = [];
+    const needle = searchString.toUpperCase();
     for (const vr of editor.visibleRanges) {
-        const slice = editor.document.getText(vr);
+        const slice = editor.document.getText(vr).toUpperCase();
         const base = editor.document.offsetAt(vr.start);
-        let m: RegExpExecArray | null;
-        while ((m = rx.exec(slice))) {
-            const startOff = base + m.index;
+        let index = 0;
+        while ((index = slice.indexOf(needle, index)) >= 0) {
+            const startOff = base + index;
             const startPos = editor.document.positionAt(startOff);
-            const endPos = editor.document.positionAt(startOff + searchString.length);
+            const endPos = editor.document.positionAt(startOff + needle.length);
             infos.push({
                 start: startPos,
                 range: new vscode.Range(startPos, endPos),
                 nextChar: getNextCharacter(editor, endPos),
                 nextNextChar: getNextCharacter(editor, endPos.translate(0, 1))
             });
+            index += needle.length;
         }
     }
     matches = generateLabels(infos);
@@ -305,10 +305,12 @@ function updateDecorations(editor: vscode.TextEditor): void {
     const labelDecorations: vscode.DecorationOptions[] = [];
     let line = 0;
     let count = matches.length;
+    let lineLength = 0;
 
     matches.forEach(match => {
         if (match.info.start.line > line) {
             line = match.info.start.line;
+            lineLength = editor.document.lineAt(line).text.length;
         }
 
         const width = match.label.length;
@@ -320,7 +322,7 @@ function updateDecorations(editor: vscode.TextEditor): void {
         });
 
         const labelPos = displayBefore ? match.info.start : match.info.range.end.translate(0, width);
-        const overflow = labelPos.character - editor.document.lineAt(line).text.length;
+        const overflow = labelPos.character - lineLength;
         const shift = useInlineLabels ? 0 : Math.min(width, width - overflow);
 
         // Add label decoration
@@ -351,7 +353,7 @@ function getNextCharacter(editor: vscode.TextEditor, position: vscode.Position):
     try {
         const nextPos = position.translate(0, 1);
         const range = new vscode.Range(position, nextPos);
-        return editor.document.getText(range);
+        return editor.document.getText(range).toUpperCase();
     } catch (e) {
         return '';
     }
@@ -377,10 +379,6 @@ function exitJumpMode(editor: vscode.TextEditor): void {
         quickPick.dispose();
         quickPick = null;
     }
-}
-
-function escapeRegExp(string: string): string {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function deactivate(): void {

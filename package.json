@@ -2,12 +2,12 @@
     "name": "vscode-code-jump",
     "displayName": "Code Jump",
     "description": "Fast cursor navigation for VS Code - jump to any position in the visible editor area with a few keystrokes",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "repository": {
         "type": "git",
         "url": "https://github.com/OxideOps/code-jump.git"
     },
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "publisher": "OxideOps",
     "engines": {
         "vscode": "^1.60.0"
