@@ -50,7 +50,7 @@ While several navigation extensions exist for VS Code, Code Jump aims to closely
 
 ## Requirements
 
-- VS Code 1.60.0 or higher
+- VS Code 1.44.0 or higher
 
 ## Known Issues
 

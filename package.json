@@ -2,7 +2,7 @@
     "name": "vscode-code-jump",
     "displayName": "Code Jump",
     "description": "Fast cursor navigation for VS Code - jump to any position in the visible editor area with a few keystrokes",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "repository": {
         "type": "git",
         "url": "https://github.com/OxideOps/code-jump.git"
@@ -10,7 +10,7 @@
     "license": "GPL-3.0-or-later",
     "publisher": "OxideOps",
     "engines": {
-        "vscode": "^1.60.0"
+        "vscode": "^1.44.0"
     },
     "icon": "media/icon.jpg",
     "categories": [
@@ -82,13 +82,14 @@
         "lint": "eslint src --ext ts"
     },
     "devDependencies": {
-        "@types/vscode": "^1.60.0",
         "@types/node": "^22.15.2",
+        "@types/vscode": "^1.44.0",
         "@typescript-eslint/eslint-plugin": "^8.31.0",
         "@typescript-eslint/parser": "^8.31.0",
+        "@vscode/vsce": "^3.6.0",
         "eslint": "^9.25.1",
-        "typescript": "^5.8.3",
         "ts-loader": "^9.3.1",
+        "typescript": "^5.8.3",
         "webpack": "^5.76.0",
         "webpack-cli": "^6.0.1"
     }
