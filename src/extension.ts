@@ -344,7 +344,7 @@ function updateDecorations(editor: vscode.TextEditor): void {
 
     // Update the QuickPick title with match count
     if (quickPick) {
-        quickPick.title = matchesExceeded ? `Too many matches!` : `${count} matches`;
+        quickPick.title = matchesExceeded ? `Too many matches!` : ``;
     }
 }
 
