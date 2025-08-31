@@ -205,7 +205,7 @@ function generateLabels(matchInfos: MatchInfo[]): Match[] {
         matchesExceeded = true;
         return [];
     }
-    let labels = Array.from({ length: count }, (_, i) => firstCharCandidates[i % firstCharCandidates.length]);
+    const labels = Array.from({ length: count }, (_, i) => firstCharCandidates[i % firstCharCandidates.length]);
 
     if (count > firstCharCandidates.length) {
         const firstCharIndices = new Map<string, number[]>();
@@ -274,7 +274,11 @@ function generateLabels(matchInfos: MatchInfo[]): Match[] {
 function findAndHighlightMatches(editor: vscode.TextEditor): void {
     if (!searchString) {
         matches = [];
+        matchesExceeded = false;
         clearDecorations(editor);
+        if (quickPick) {
+            quickPick.title = ``;
+        }
         return;
     }
     const infos: MatchInfo[] = [];
@@ -298,13 +302,15 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
     }
     matches = generateLabels(infos);
     updateDecorations(editor);
+    if (quickPick) {
+        quickPick.title = matchesExceeded ? `Too many matches!` : ``;
+    }
 }
 
 function updateDecorations(editor: vscode.TextEditor): void {
     const matchRanges: vscode.DecorationOptions[] = [];
     const labelDecorations: vscode.DecorationOptions[] = [];
     let line = 0;
-    let count = matches.length;
     let lineLength = 0;
 
     matches.forEach(match => {
@@ -341,11 +347,6 @@ function updateDecorations(editor: vscode.TextEditor): void {
     // Apply decorations
     editor.setDecorations(matchDecorationType, matchRanges);
     editor.setDecorations(labelDecorationType, labelDecorations);
-
-    // Update the QuickPick title with match count
-    if (quickPick) {
-        quickPick.title = matchesExceeded ? `Too many matches!` : ``;
-    }
 }
 
 function getNextCharacter(editor: vscode.TextEditor, position: vscode.Position): string {
@@ -354,7 +355,7 @@ function getNextCharacter(editor: vscode.TextEditor, position: vscode.Position):
         const nextPos = position.translate(0, 1);
         const range = new vscode.Range(position, nextPos);
         return editor.document.getText(range).toUpperCase();
-    } catch (e) {
+    } catch {
         return '';
     }
 }
