@@ -310,7 +310,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
 function updateDecorations(editor: vscode.TextEditor): void {
     const matchRanges: vscode.DecorationOptions[] = [];
     const labelDecorations: vscode.DecorationOptions[] = [];
-    let line = 0;
+    let line = -1;
     let lineLength = 0;
 
     matches.forEach(match => {
