@@ -276,9 +276,7 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
         matches = [];
         matchesExceeded = false;
         clearDecorations(editor);
-        if (quickPick) {
-            quickPick.title = ``;
-        }
+        updateTitle();
         return;
     }
     const infos: MatchInfo[] = [];
@@ -302,8 +300,14 @@ function findAndHighlightMatches(editor: vscode.TextEditor): void {
     }
     matches = generateLabels(infos);
     updateDecorations(editor);
+    updateTitle();
+}
+
+function updateTitle(): void {
     if (quickPick) {
-        quickPick.title = matchesExceeded ? `Too many matches!` : ``;
+        quickPick.title = !searchString ? '' :
+            matchesExceeded ? 'Too many matches!' :
+                matches.length === 0 ? 'No matches found!' : '';
     }
 }
 
